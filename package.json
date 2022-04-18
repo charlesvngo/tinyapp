@@ -16,5 +16,8 @@
   "bugs": {
     "url": "https://github.com/charlesvngo/tinyapp/issues"
   },
-  "homepage": "https://github.com/charlesvngo/tinyapp#readme"
+  "homepage": "https://github.com/charlesvngo/tinyapp#readme",
+  "dependencies": {
+    "express": "^4.17.3"
+  }
 }
