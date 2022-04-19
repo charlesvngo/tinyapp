@@ -15,24 +15,16 @@
     <div class="card text-center">
       <div class="card-header"></div>
       <div class="card-body">
-        <h5 class="card-title">TinyURL for: <%= longURL %>
-        </h5>
-        <p class="card-text">Short URL: <a href="/u/<%= shortURL %>">
-            <%= shortURL %>
-          </a></p>
-      </div>
-    </div>
-    <div class="card text-center">
-      <div class="card-header">
-        <h2 class="card-title">Edit</h5>
-          <form class="form-group" action="/urls/<%= shortURL %>/edit" method="POST">
-            <div class="form-group mb-2">
-              <label for="longURL">New URL:</label>
-              <input class="form-group" type="text" name="longURL" placeholder="http://"
-                style="width: 300px; margin: 1em">
-              <button type="submit" class="btn btn-primary">Submit</button>
-            </div>
-          </form>
+        <h2 class="card-title">Sign Up</h2>
+        <form class="form-group" action="/register" method="POST">
+          <div class="form-group mb-2">
+            <input class="form-group" type="email" name="email" placeholder="email"
+              style="width: 200px; margin: 1em">
+            <input class="form-group" type="password" name="password" placeholder="password"
+              style="width: 200px; margin: 1em">
+            <button type="submit" class="btn btn-primary">Submit</button>
+          </div>
+        </form>
       </div>
     </div>
 

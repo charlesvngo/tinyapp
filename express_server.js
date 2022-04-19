@@ -34,6 +34,13 @@ app.get("/", (req, res) => {
   res.send("Hello!");
 });
 
+app.get("/register", (req, res) => {
+  const templateVars = {
+    username: req.cookies["username"],
+  };
+  res.render("user_register", templateVars);
+});
+
 // URL database page
 app.get("/urls", (req, res) => {
   const templateVars = {
@@ -53,7 +60,7 @@ app.get("/urls/new", (req, res) => {
 
 // Create pages for the shortURLs in the database
 app.get("/urls/:shortURL", (req, res) => {
-  const templateVars = { 
+  const templateVars = {
     username: req.cookies["username"],
     shortURL: req.params.shortURL,
     longURL: urlDatabase[req.params.shortURL] };
