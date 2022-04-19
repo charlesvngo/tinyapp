@@ -1,6 +1,7 @@
 const express = require("express");
 const morgan = require('morgan');
 const bodyParser = require("body-parser");
+const cookieParser = require("cookie-parser");
 const app = express();
 const PORT = 8080;
 
@@ -26,6 +27,7 @@ app.set("view engine", "ejs");
 // Middleware to debug connections and parse the buffer when performing post requests.
 app.use(morgan("dev"));
 app.use(bodyParser.urlencoded({extended: true}));
+app.use(cookieParser());
 
 // Home page
 app.get("/", (req, res) => {
