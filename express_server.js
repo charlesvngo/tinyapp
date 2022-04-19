@@ -63,9 +63,7 @@ app.get("/urls.json", (req, res) => {
 app.post("/urls", (req, res) => {
   const newShortUrl = generateRandomString();
   urlDatabase[newShortUrl] = req.body.longURL;
-  // res.send("Ok");         // Respond with 'Ok' (we will replace this)
-  const templateVars = { shortURL: newShortUrl, longURL: urlDatabase[newShortUrl] };
-  res.render("urls_show", templateVars);
+  res.redirect(`/urls/${newShortUrl}`);
 });
 
 app.post("/urls/:shortURL/delete", (req, res) => {
