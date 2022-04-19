@@ -9,6 +9,16 @@ const urlDatabase = {
   "9sm5xK" : "http://www.google.com"
 };
 
+const generateRandomString = () => {
+  let output = '';
+  let characterSet = 'abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789';
+  for (let i = 0; i < 6; i++) {
+    let randomizedChar = Math.floor(Math.random() * characterSet.length);
+    output += characterSet.charAt(randomizedChar);
+  }
+  return output;
+};
+
 app.set("view engine", "ejs");
 
 app.use(morgan("dev"));
