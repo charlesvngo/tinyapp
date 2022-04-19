@@ -68,6 +68,16 @@ app.post("/urls", (req, res) => {
   res.render("urls_show", templateVars);
 });
 
+app.post("/urls/:shortURL/delete", (req, res) => {
+  delete urlDatabase[req.params.shortURL];
+  console.log(urlDatabase);
+
+  const templateVars = { urls: urlDatabase };
+  res.render("urls_index", templateVars);
+});
+
+
+
 app.listen(PORT, () => {
   console.log(`Example app listening on port ${PORT}!`);
 });
