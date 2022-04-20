@@ -65,11 +65,17 @@ app.get("/", (req, res) => {
 // New user registration page
 app.get("/register", (req, res) => {
   const templateVars = checkLoginCookie(req);
+  if (templateVars.userId) {
+    return res.redirect("/urls");
+  }
   res.render("user_register", templateVars);
 });
 
 app.get("/login", (req, res) => {
   const templateVars = checkLoginCookie(req);
+  if (templateVars.userId) {
+    return res.redirect("/urls");
+  }
   res.render("user_login", templateVars);
 });
 
@@ -115,9 +121,7 @@ app.post("/urls", (req, res) => {
 // Removing short URLs from the database
 app.post("/urls/:shortURL/delete", (req, res) => {
   delete urlDatabase[req.params.shortURL];
-  const templateVars = checkLoginCookie(req);
-  templateVars.urls = urlDatabase;
-  res.render("urls_index", templateVars);
+  res.redirect("/urls");
 });
 
 // Modifying short URLs
