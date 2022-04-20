@@ -1,35 +1,16 @@
 const express = require("express");
 const morgan = require('morgan');
+const bcrypt = require('bcryptjs');
 const bodyParser = require("body-parser");
 const cookieParser = require("cookie-parser");
 const app = express();
 const PORT = 8080;
 
-// Database of urls and shortened urls.
-const urlDatabase = {
-  "b2xVn2": {
-    longURL: "http://www.lighthouselabs.ca",
-    userId: "Bsdfa3"
-  },
-  "9sm5xK": {
-    longURL: "http://www.google.com",
-    userId: "Bsdfa3"
-  },
-};
+// Database of urls and shortened urls. Urls are registed to specific users.
+const urlDatabase = {};
 
 // User database.
-const users = {
-  "Bsdfa3": {
-    id: "Bsdfa3",
-    email: "a@a.com",
-    password: "123"
-  },
-  "esfre1": {
-    id: "esfre1",
-    email: "s@s.com",
-    password: "123"
-  }
-};
+const users = {};
 
 // Function to generate a random 6 alphanumeric string.
 const generateRandomString = () => {
@@ -55,7 +36,8 @@ const checkLoginCookie = (req) => {
   return output;
 };
 
-const checkUsersUrls = (req) => {
+// Function that checks if the current user has any urls in the database.
+const urlsForUser = (req) => {
   let output = {};
   for (const shortUrl in urlDatabase) {
     if (urlDatabase[shortUrl].userId === req.cookies.user_id) {
@@ -79,7 +61,7 @@ app.get("/", (req, res) => {
   res.send("Hello! Logging into test user.");
 });
 
-// New user registration page
+// New user registration page. If user is already registered, will redirect to urls homepage.
 app.get("/register", (req, res) => {
   const templateVars = checkLoginCookie(req);
   if (templateVars.userId) {
@@ -88,6 +70,7 @@ app.get("/register", (req, res) => {
   res.render("user_register", templateVars);
 });
 
+// Log in page. If user is already registered, will redirect to urls homepage.
 app.get("/login", (req, res) => {
   const templateVars = checkLoginCookie(req);
   if (templateVars.userId) {
@@ -99,16 +82,18 @@ app.get("/login", (req, res) => {
 // URL database page
 app.get("/urls", (req, res) => {
   const templateVars = checkLoginCookie(req);
+  // If user is not logged in send error.
   if (templateVars.userId === null) {
     return res.status(403).send("Please log in or register to see your URLs");
   }
-  templateVars.urls = checkUsersUrls(req);
+  templateVars.urls = urlsForUser(req);
   res.render("urls_index", templateVars);
 });
 
 // Create a new URL to be shortened
 app.get("/urls/new", (req, res) => {
   const templateVars = checkLoginCookie(req);
+  // If user is not logged in send error.
   if (!templateVars.userId) {
     return res.redirect("/login");
   }
@@ -118,10 +103,12 @@ app.get("/urls/new", (req, res) => {
 // Create pages for the shortURLs in the database
 app.get("/urls/:shortURL", (req, res) => {
   const templateVars = checkLoginCookie(req);
+  // If user is not logged in, send error.
   if (templateVars.userId === null) {
     return res.status(403).send("Please log in or register to edit your URLs");
   }
 
+  // If user does not own the current shortURL, send error.
   if (templateVars.userId !== urlDatabase[req.params.shortURL].userId) {
     return res.status(403).send("Invalid URL to edit. To edit this URL, please log into the correct account");
   }
@@ -144,6 +131,7 @@ app.get("/urls.json", (req, res) => {
 
 // Adding new short URLs to the database.
 app.post("/urls", (req, res) => {
+  // Check if logged in. If not, send 401.
   if (!req.cookies.user_id) {
     return res.status(401).send("Please log in to create a short URL");
   }
@@ -194,7 +182,7 @@ app.post("/login", (req, res) => {
   }
 
   // Check if password is correct
-  if (users[foundUserId].password !== password) {
+  if (!bcrypt.compareSync(password, users[foundUserId].password)) {
     return res.status(401).send("Incorrect password");
   }
 
@@ -205,15 +193,19 @@ app.post("/login", (req, res) => {
 
 // Register for an account
 app.post("/register", (req, res) => {
+  const email = req.body.email;
+  const password = req.body.password;
+  const hashedPassword = bcrypt.hashSync(password, 10);
+
   // Check for valid email and passwords
-  if (req.body.email === '' || req.body.password === '') {
+  if (email === '' || password === '') {
     res.status(400);
     res.send("Invalid email or password.");
     return;
   }
   // Check for duplicate emails.
   for (const userId in users) {
-    if (users[userId].email === req.body.email) {
+    if (users[userId].email === email) {
       res.status(400);
       res.send("Duplicate email detected.");
       return;
@@ -223,8 +215,8 @@ app.post("/register", (req, res) => {
   const userId = generateRandomString();
   users[userId] = {
     id: userId,
-    email: req.body.email,
-    password: req.body.password
+    email: email,
+    password: hashedPassword
   };
   res.cookie("user_id", userId);
   res.redirect("/urls");
