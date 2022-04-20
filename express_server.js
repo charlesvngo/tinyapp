@@ -67,6 +67,7 @@ const checkUsersUrls = (req) => {
 
 // Setting EJS as the template engine.
 app.set("view engine", "ejs");
+
 // Middleware to debug connections and parse the buffer when performing post requests.
 app.use(morgan("dev"));
 app.use(bodyParser.urlencoded({extended: true}));
@@ -115,13 +116,13 @@ app.get("/urls/new", (req, res) => {
 app.get("/urls/:shortURL", (req, res) => {
   const templateVars = checkLoginCookie(req);
   templateVars.shortURL = req.params.shortURL;
-  templateVars.longURL = urlDatabase[req.params.shortURL];
+  templateVars.longURL = urlDatabase[req.params.shortURL].longURL;
   res.render("urls_show", templateVars);
 });
 
 // Short URL redirect link
 app.get("/u/:shortURL", (req, res) => {
-  const longURL = urlDatabase[req.params.shortURL];
+  const longURL = urlDatabase[req.params.shortURL].longURL;
   res.redirect(longURL);
 });
 
@@ -136,7 +137,9 @@ app.post("/urls", (req, res) => {
     return res.status(401).send("Please log in to create a short URL");
   }
   const newShortUrl = generateRandomString();
-  urlDatabase[newShortUrl] = req.body.longURL;
+  urlDatabase[newShortUrl] = {};
+  urlDatabase[newShortUrl].longURL = req.body.longURL;
+  urlDatabase[newShortUrl].userId = req.cookies.user_id;
   res.redirect(`/urls/${newShortUrl}`);
 });
 
@@ -148,7 +151,7 @@ app.post("/urls/:shortURL/delete", (req, res) => {
 
 // Modifying short URLs
 app.post("/urls/:shortURL/edit", (req, res) => {
-  urlDatabase[req.params.shortURL] = req.body.longURL;
+  urlDatabase[req.params.shortURL].longURL = req.body.longURL;
   res.redirect("/urls");
 });
 
