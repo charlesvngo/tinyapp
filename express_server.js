@@ -36,6 +36,19 @@ const generateRandomString = () => {
   return output;
 };
 
+// Function to check if a userId cookie is present. If not, will assign null to the variables.
+const checkLoginCookie = (req) => {
+  let output = {};
+  if (!req.cookies.user_id) {
+    output.userId = null;
+    output.userEmail = null;
+  } else {
+    output.userId = req.cookies.user_id;
+    output.userEmail = users[req.cookies.user_id].email;
+  }
+  return output;
+};
+
 // Setting EJS as the template engine.
 app.set("view engine", "ejs");
 // Middleware to debug connections and parse the buffer when performing post requests.
@@ -51,46 +64,29 @@ app.get("/", (req, res) => {
 
 // New user registration page
 app.get("/register", (req, res) => {
-  const templateVars = {
-    userId: req.cookies.user_id,
-    userEmail: users[req.cookies.user_id]["email"],
-    username: req.cookies["username"],
-  };
+  const templateVars = checkLoginCookie(req);
   res.render("user_register", templateVars);
 });
 
 // URL database page
 app.get("/urls", (req, res) => {
-  const templateVars = {
-    userId: null,
-    userEmail: null,
-    urls: urlDatabase
-  };
-  if (req.cookies.userId) {
-    templateVars.userId = req.cookies.user_id;
-    templateVars.userEmail = users[req.cookies.user_id]["email"];
-  };
+  const templateVars = checkLoginCookie(req);
+  templateVars.urls = urlDatabase;
+  console.log("templateVars", templateVars);
   res.render("urls_index", templateVars);
 });
 
 // Create a new URL to be shortened
 app.get("/urls/new", (req, res) => {
-  const templateVars = {
-    userId: req.cookies.user_id,
-    userEmail: users[req.cookies.user_id]["email"],
-    username: req.cookies["username"],
-  };
+  const templateVars = checkLoginCookie(req);
   res.render("urls_new", templateVars);
 });
 
 // Create pages for the shortURLs in the database
 app.get("/urls/:shortURL", (req, res) => {
-  const templateVars = {
-    userId: req.cookies.user_id,
-    userEmail: users[req.cookies.user_id]["email"],
-    username: req.cookies["username"],
-    shortURL: req.params.shortURL,
-    longURL: urlDatabase[req.params.shortURL] };
+  const templateVars = checkLoginCookie(req);
+  templateVars.shortURL = req.params.shortURL;
+  templateVars.longURL = urlDatabase[req.params.shortURL];
   res.render("urls_show", templateVars);
 });
 
@@ -115,24 +111,16 @@ app.post("/urls", (req, res) => {
 // Removing short URLs from the database
 app.post("/urls/:shortURL/delete", (req, res) => {
   delete urlDatabase[req.params.shortURL];
-  const templateVars = {
-    userId: req.cookies.user_id,
-    userEmail: users[req.cookies.user_id]["email"],
-    username: req.cookies["username"],
-    urls: urlDatabase
-  };
+  const templateVars = checkLoginCookie(req);
+  templateVars.urls = urlDatabase;
   res.render("urls_index", templateVars);
 });
 
 // Modifying short URLs
 app.post("/urls/:shortURL/edit", (req, res) => {
   urlDatabase[req.params.shortURL] = req.body.longURL;
-  const templateVars = {
-    userId: req.cookies.user_id,
-    userEmail: users[req.cookies.user_id]["email"],
-    username: req.cookies["username"],
-    urls: urlDatabase
-  };
+  const templateVars = checkLoginCookie(req);
+  templateVars.urls = urlDatabase;
   res.render("urls_index", templateVars);
 });
 
