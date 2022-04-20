@@ -62,10 +62,13 @@ app.get("/register", (req, res) => {
 // URL database page
 app.get("/urls", (req, res) => {
   const templateVars = {
-    userId: req.cookies.user_id,
-    userEmail: users[req.cookies.user_id]["email"],
-    username: req.cookies["username"],
+    userId: null,
+    userEmail: null,
     urls: urlDatabase
+  };
+  if (req.cookies.userId) {
+    templateVars.userId = req.cookies.user_id;
+    templateVars.userEmail = users[req.cookies.user_id]["email"];
   };
   res.render("urls_index", templateVars);
 });
