@@ -7,19 +7,25 @@ const PORT = 8080;
 
 // Database of urls and shortened urls.
 const urlDatabase = {
-  "b2xVn2" : "http://www.lighthouselabs.ca",
-  "9sm5xK" : "http://www.google.com"
+  "b2xVn2": {
+    longURL: "http://www.lighthouselabs.ca",
+    userId: "Bsdfa3"
+  },
+  "9sm5xK": {
+    longURL: "http://www.google.com",
+    userId: "Bsdfa3"
+  },
 };
 
 // User database.
 const users = {
-  "randOne": {
-    id: "randOne",
+  "Bsdfa3": {
+    id: "Bsdfa3",
     email: "a@a.com",
     password: "123"
   },
-  "randTwo": {
-    id: "randTwo",
+  "esfre1": {
+    id: "esfre1",
     email: "s@s.com",
     password: "123"
   }
@@ -49,6 +55,16 @@ const checkLoginCookie = (req) => {
   return output;
 };
 
+const checkUsersUrls = (req) => {
+  let output = {};
+  for (const shortUrl in urlDatabase) {
+    if (urlDatabase[shortUrl].userId === req.cookies.user_id) {
+      output[shortUrl] = urlDatabase[shortUrl].longURL;
+    }
+  }
+  return output;
+};
+
 // Setting EJS as the template engine.
 app.set("view engine", "ejs");
 // Middleware to debug connections and parse the buffer when performing post requests.
@@ -58,8 +74,8 @@ app.use(cookieParser());
 
 // Home page
 app.get("/", (req, res) => {
-  res.cookie("user_id", users['randOne'].id);
-  res.send("Hello!");
+  res.cookie("user_id", users['Bsdfa3'].id);
+  res.send("Hello! Logging into test user.");
 });
 
 // New user registration page
@@ -82,13 +98,16 @@ app.get("/login", (req, res) => {
 // URL database page
 app.get("/urls", (req, res) => {
   const templateVars = checkLoginCookie(req);
-  templateVars.urls = urlDatabase;
+  templateVars.urls = checkUsersUrls(req);
   res.render("urls_index", templateVars);
 });
 
 // Create a new URL to be shortened
 app.get("/urls/new", (req, res) => {
   const templateVars = checkLoginCookie(req);
+  if (!templateVars.userId) {
+    return res.redirect("/login");
+  }
   res.render("urls_new", templateVars);
 });
 
@@ -113,6 +132,9 @@ app.get("/urls.json", (req, res) => {
 
 // Adding new short URLs to the database.
 app.post("/urls", (req, res) => {
+  if (!req.cookies.user_id) {
+    return res.status(401).send("Please log in to create a short URL");
+  }
   const newShortUrl = generateRandomString();
   urlDatabase[newShortUrl] = req.body.longURL;
   res.redirect(`/urls/${newShortUrl}`);
