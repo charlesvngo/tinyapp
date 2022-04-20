@@ -139,7 +139,24 @@ app.post("/login", (req, res) => {
   res.redirect("/urls");
 });
 
+// Register for an account
 app.post("/register", (req, res) => {
+  // Check for valid email and passwords
+  if (req.body.email === '' || req.body.password === '') {
+    res.statusCode = 400;
+    res.send("Invalid email or password.");
+    return;
+  }
+  // Check for duplicate emails.
+  for (const userId in users) {
+    console.log(users[userId].email);
+    if (users[userId].email === req.body.email) {
+      res.statusCode = 400;
+      res.send("Duplicate email detected.");
+      return;
+    }
+  }
+
   const userId = generateRandomString();
   users[userId] = {
     id: userId,
