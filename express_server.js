@@ -99,6 +99,9 @@ app.get("/login", (req, res) => {
 // URL database page
 app.get("/urls", (req, res) => {
   const templateVars = checkLoginCookie(req);
+  if (templateVars.userId === null) {
+    return res.status(403).send("Please log in or register to see your URLs");
+  }
   templateVars.urls = checkUsersUrls(req);
   res.render("urls_index", templateVars);
 });
@@ -115,6 +118,14 @@ app.get("/urls/new", (req, res) => {
 // Create pages for the shortURLs in the database
 app.get("/urls/:shortURL", (req, res) => {
   const templateVars = checkLoginCookie(req);
+  if (templateVars.userId === null) {
+    return res.status(403).send("Please log in or register to edit your URLs");
+  }
+
+  if (templateVars.userId !== urlDatabase[req.params.shortURL].userId) {
+    return res.status(403).send("Invalid URL to edit. To edit this URL, please log into the correct account");
+  }
+
   templateVars.shortURL = req.params.shortURL;
   templateVars.longURL = urlDatabase[req.params.shortURL].longURL;
   res.render("urls_show", templateVars);
@@ -145,6 +156,10 @@ app.post("/urls", (req, res) => {
 
 // Removing short URLs from the database
 app.post("/urls/:shortURL/delete", (req, res) => {
+  if (req.cookies.user_id !== urlDatabase[req.params.shortURL].userId) {
+    return res.status(403).send("Invalid URL to delete. To delete this URL, please log into the correct account");
+  }
+
   delete urlDatabase[req.params.shortURL];
   res.redirect("/urls");
 });
