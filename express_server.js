@@ -68,11 +68,15 @@ app.get("/register", (req, res) => {
   res.render("user_register", templateVars);
 });
 
+app.get("/login", (req, res) => {
+  const templateVars = checkLoginCookie(req);
+  res.render("user_login", templateVars);
+});
+
 // URL database page
 app.get("/urls", (req, res) => {
   const templateVars = checkLoginCookie(req);
   templateVars.urls = urlDatabase;
-  console.log("templateVars", templateVars);
   res.render("urls_index", templateVars);
 });
 
@@ -119,30 +123,54 @@ app.post("/urls/:shortURL/delete", (req, res) => {
 // Modifying short URLs
 app.post("/urls/:shortURL/edit", (req, res) => {
   urlDatabase[req.params.shortURL] = req.body.longURL;
-  const templateVars = checkLoginCookie(req);
-  templateVars.urls = urlDatabase;
-  res.render("urls_index", templateVars);
+  res.redirect("/urls");
 });
 
 // Log in requests
 app.post("/login", (req, res) => {
-  res.cookie("username", req.body.username);
+  const email = req.body.email;
+  const password = req.body.password;
+  let foundUserId = null;
+
+  // Check if email and password are truthy
+  if (!email || !password) {
+    return res.status(400).send("Invalid email or password.");
+  }
+  
+  // Check if email is in current database
+  for (const userId in users) {
+    if (users[userId].email === email) {
+      foundUserId = userId;
+    }
+  }
+  
+  // If email is not in system
+  if (!foundUserId) {
+    return res.status(403).send("No user found");
+  }
+
+  // Check if password is correct
+  if (users[foundUserId].password !== password) {
+    return res.status(401).send("Incorrect password");
+  }
+
+  res.cookie("user_id", foundUserId);
   res.redirect("/urls");
+
 });
 
 // Register for an account
 app.post("/register", (req, res) => {
   // Check for valid email and passwords
   if (req.body.email === '' || req.body.password === '') {
-    res.statusCode = 400;
+    res.status(400);
     res.send("Invalid email or password.");
     return;
   }
   // Check for duplicate emails.
   for (const userId in users) {
-    console.log(users[userId].email);
     if (users[userId].email === req.body.email) {
-      res.statusCode = 400;
+      res.status(400);
       res.send("Duplicate email detected.");
       return;
     }
@@ -161,7 +189,7 @@ app.post("/register", (req, res) => {
 // Log out requests
 app.post("/logout", (req, res) => {
   res.clearCookie("user_id");
-  res.redirect("/urls");
+  res.redirect("/login");
 });
 
 // Server initialization
