@@ -26,14 +26,24 @@ const generateRandomString = () => {
 // Function to check if a userId cookie is present. If not, will assign null to the variables.
 const checkLoginCookie = (req) => {
   let output = {};
-  if (!req.session.user_id) {
+  if (!req.session.user_id || !users[req.session.user_id]) {
     output.userId = null;
     output.userEmail = null;
   } else {
     output.userId = req.session.user_id;
-    output.userEmail = users[output.userId].email;
+    output.userEmail = users[req.session.user_id].email;
   }
   return output;
+};
+
+const getUserByEmail = (email, database) => {
+  let user = null;
+  for (const users in database) {
+    if (database[users].email === email) {
+      user = users;
+    }
+  }
+  return user;
 };
 
 // Function that checks if the current user has any urls in the database.
@@ -172,11 +182,7 @@ app.post("/login", (req, res) => {
   }
   
   // Check if email is in current database
-  for (const userId in users) {
-    if (users[userId].email === email) {
-      foundUserId = userId;
-    }
-  }
+  foundUserId = getUserByEmail(email, users);
   
   // If email is not in system
   if (!foundUserId) {
@@ -206,12 +212,8 @@ app.post("/register", (req, res) => {
     return;
   }
   // Check for duplicate emails.
-  for (const userId in users) {
-    if (users[userId].email === email) {
-      res.status(400);
-      res.send("Duplicate email detected.");
-      return;
-    }
+  if (getUserByEmail(email, users)) {
+    return res.status(403).send("Duplicate email found");
   }
 
   const userId = generateRandomString();
