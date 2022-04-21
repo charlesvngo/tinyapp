@@ -10,15 +10,15 @@ const generateRandomString = () => {
 };
 
 // Function to check if a userId cookie is present. If not, will assign null to the variables.
-const checkLoginCookie = (userId, users) => {
+const checkLoginCookie = (id, users) => {
   let output = {};
   // If no login is present or login is invalid
-  if (!userId || !users[userId]) {
-    output.userId = null;
+  if (!id || !users[id]) {
+    output.id = null;
     output.userEmail = null;
   } else {
-    output.userId = userId;
-    output.userEmail = users[userId].email;
+    output.id = id;
+    output.userEmail = users[id].email;
   }
   return output;
 };
@@ -35,10 +35,10 @@ const getUserByEmail = (email, database) => {
 };
 
 // Function that checks if the current user has any urls in the database.
-const urlsForUser = (userId, urlDatabase) => {
+const urlsForUser = (id, urlDatabase) => {
   let output = {};
   for (const shortUrl in urlDatabase) {
-    if (urlDatabase[shortUrl].userId === userId) {
+    if (urlDatabase[shortUrl].userId === id) {
       output[shortUrl] = urlDatabase[shortUrl].longURL;
     }
   }

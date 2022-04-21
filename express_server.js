@@ -28,7 +28,7 @@ app.use(cookieSession({
 app.get("/", (req, res) => {
   const currentUserId = req.session.user_id;
   const templateVars = checkLoginCookie(currentUserId, users);
-  if (templateVars.userId) {
+  if (templateVars.id) {
     return res.redirect("/urls");
   }
   res.redirect("/login");
@@ -38,7 +38,7 @@ app.get("/", (req, res) => {
 app.get("/register", (req, res) => {
   const currentUserId = req.session.user_id;
   const templateVars = checkLoginCookie(currentUserId, users);
-  if (templateVars.userId) {
+  if (templateVars.id) {
     return res.redirect("/urls");
   }
   res.render("user_register", templateVars);
@@ -48,7 +48,7 @@ app.get("/register", (req, res) => {
 app.get("/login", (req, res) => {
   const currentUserId = req.session.user_id;
   const templateVars = checkLoginCookie(currentUserId, users);
-  if (templateVars.userId) {
+  if (templateVars.id) {
     return res.redirect("/urls");
   }
   res.render("user_login", templateVars);
@@ -59,7 +59,7 @@ app.get("/urls", (req, res) => {
   const currentUserId = req.session.user_id;
   const templateVars = checkLoginCookie(currentUserId, users);
   // If user is not logged in send error.
-  if (templateVars.userId === null) {
+  if (templateVars.id === null) {
     return res.status(403).send("Please log in or register to see your URLs");
   }
   templateVars.urls = urlsForUser(currentUserId, urlDatabase);
@@ -71,7 +71,7 @@ app.get("/urls/new", (req, res) => {
   const currentUserId = req.session.user_id;
   const templateVars = checkLoginCookie(currentUserId, users);
   // If user is not logged in send error.
-  if (!templateVars.userId) {
+  if (!templateVars.id) {
     return res.redirect("/login");
   }
   res.render("urls_new", templateVars);
@@ -82,12 +82,12 @@ app.get("/urls/:shortURL", (req, res) => {
   const currentUserId = req.session.user_id;
   const templateVars = checkLoginCookie(currentUserId, users);
   // If user is not logged in, send error.
-  if (templateVars.userId === null) {
+  if (templateVars.id === null) {
     return res.status(403).send("Please log in or register to edit your URLs");
   }
 
   // If user does not own the current shortURL, send error.
-  if (templateVars.userId !== urlDatabase[req.params.shortURL].userId) {
+  if (templateVars.id !== urlDatabase[req.params.shortURL].userId) {
     return res.status(403).send("Invalid URL to edit. To edit this URL, please log into the correct account");
   }
 
