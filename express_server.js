@@ -4,7 +4,7 @@ const bcrypt = require('bcryptjs');
 const bodyParser = require(`body-parser`);
 const cookieSession = require('cookie-session');
 const app = express();
-const { generateRandomString, validateLoginCookie, getUserByEmail, urlsForUser } = require('./helpers');
+const { generateRandomString, validateLoginCookie, getUserByEmail, urlsForUser, generateErrorPage } = require('./helpers');
 const PORT = 8080;
 
 // Database of urls and shortened urls. Urls are registed to specific users.
@@ -23,13 +23,6 @@ app.use(cookieSession({
   name: 'session',
   keys: ['key1', 'key2']
 }));
-
-const generateErrorPage = (userId, usersDatabase, statusCode, errorMessage) => {
-  const templateVars = validateLoginCookie(userId, usersDatabase);
-  templateVars.statusCode = statusCode;
-  templateVars.errorMessage = errorMessage;
-  return templateVars;
-};
 
 // Home page. If logged in, redirect to urls index, if not then login page.
 app.get("/", (req, res) => {
@@ -83,12 +76,14 @@ app.get("/urls/new", (req, res) => {
 // Create pages for the shortURLs in the database
 app.get("/urls/:shortURL", (req, res) => {
   let templateVars = validateLoginCookie(req.session.user_id, users);
-  // If user is not logged in, send error.
   if (templateVars.id === null) {
     templateVars = generateErrorPage(req.session.user_id, users, 401, "Please login to edit your URLs.");
     return res.status(401).render("errors", templateVars);
   }
-
+  if (!urlDatabase[req.params.shortURL]) {
+    templateVars = generateErrorPage(req.session.user_id, users, 404, "URL does not exist.");
+    return res.status(404).render("errors", templateVars);
+  }
   // If user does not own the current shortURL, send error.
   if (templateVars.id !== urlDatabase[req.params.shortURL].userId) {
     templateVars = generateErrorPage(req.session.user_id, users, 403, "Invalid URL to edit.");
@@ -107,11 +102,6 @@ app.get("/u/:shortURL", (req, res) => {
   }
   const longURL = urlDatabase[req.params.shortURL].longURL;
   res.redirect(longURL);
-});
-
-// Output a .json containing all urls and shortURLS.
-app.get("/urls.json", (req, res) => {
-  res.json(urlDatabase);
 });
 
 // Adding new short URLs to the database.
@@ -160,22 +150,18 @@ app.post("/login", (req, res) => {
     const templateVars = generateErrorPage(req.session.user_id, users, 401, "Invalid email or password");
     return res.status(401).render("errors", templateVars);
   }
-
   // Check if email is in current database
   foundUserId = getUserByEmail(email, users);
-
   // If email is not in system
   if (!foundUserId) {
     const templateVars = generateErrorPage(req.session.user_id, users, 403, "No user found");
     return res.status(403).render("errors", templateVars);
   }
-
   // Check if password is correct
   if (!bcrypt.compareSync(password, users[foundUserId].password)) {
     const templateVars = generateErrorPage(req.session.user_id, users, 403, "Incorrect Password");
     return res.status(403).render("errors", templateVars);
   }
-
   req.session["user_id"] = foundUserId;
   res.redirect("/urls");
 
@@ -186,7 +172,6 @@ app.post("/register", (req, res) => {
   const email = req.body.email;
   const password = req.body.password;
   const hashedPassword = bcrypt.hashSync(password, 10);
-
   // Check for valid email and passwords
   if (email === '' || password === '') {
     const templateVars = generateErrorPage(req.session.user_id, users, 403, "Invalid email or password");
@@ -197,7 +182,6 @@ app.post("/register", (req, res) => {
     const templateVars = generateErrorPage(req.session.user_id, users, 403, "Account with email already exists");
     return res.status(403).render("errors", templateVars);
   }
-
   const userId = generateRandomString();
   users[userId] = {
     id: userId,

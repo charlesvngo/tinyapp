@@ -45,4 +45,18 @@ const urlsForUser = (id, urlDatabase) => {
   return output;
 };
 
-module.exports = { generateRandomString, validateLoginCookie, getUserByEmail, urlsForUser };
+// Function to create the error template needed for the error page.
+const generateErrorPage = (userId, usersDatabase, statusCode, errorMessage) => {
+  const templateVars = validateLoginCookie(userId, usersDatabase);
+  templateVars.statusCode = statusCode;
+  templateVars.errorMessage = errorMessage;
+  return templateVars;
+};
+
+module.exports = {
+  generateRandomString,
+  validateLoginCookie,
+  getUserByEmail,
+  urlsForUser,
+  generateErrorPage
+};
