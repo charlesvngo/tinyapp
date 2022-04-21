@@ -12,6 +12,7 @@ const generateRandomString = () => {
 // Function to check if a userId cookie is present. If not, will assign null to the variables.
 const checkLoginCookie = (req, users) => {
   let output = {};
+  // If no login is present or login is invalid
   if (!req.session.user_id || !users[req.session.user_id]) {
     output.userId = null;
     output.userEmail = null;
@@ -24,7 +25,7 @@ const checkLoginCookie = (req, users) => {
 
 // Function that checks if the user's email is within the database.
 const getUserByEmail = (email, database) => {
-  let user = null;
+  let user;
   for (const users in database) {
     if (database[users].email === email) {
       user = users;

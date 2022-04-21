@@ -26,7 +26,7 @@ app.use(cookieSession({
 
 // Home page
 app.get("/", (req, res) => {
-  res.send("Hello! Logging into test user.");
+  res.send("Hello! Test landing page.");
 });
 
 // New user registration page. If user is already registered, will redirect to urls homepage.
