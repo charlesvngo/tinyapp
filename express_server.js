@@ -24,14 +24,20 @@ app.use(cookieSession({
   keys: ['key1', 'key2']
 }));
 
-// Home page
+// Home page. If logged in, redirect to urls index, if not then login page.
 app.get("/", (req, res) => {
-  res.send("Hello! Test landing page.");
+  const currentUserId = req.session.user_id;
+  const templateVars = checkLoginCookie(currentUserId, users);
+  if (templateVars.userId) {
+    return res.redirect("/urls");
+  }
+  res.redirect("/login");
 });
 
 // New user registration page. If user is already registered, will redirect to urls homepage.
 app.get("/register", (req, res) => {
-  const templateVars = checkLoginCookie(req, users);
+  const currentUserId = req.session.user_id;
+  const templateVars = checkLoginCookie(currentUserId, users);
   if (templateVars.userId) {
     return res.redirect("/urls");
   }
@@ -40,7 +46,8 @@ app.get("/register", (req, res) => {
 
 // Log in page. If user is already registered, will redirect to urls homepage.
 app.get("/login", (req, res) => {
-  const templateVars = checkLoginCookie(req, users);
+  const currentUserId = req.session.user_id;
+  const templateVars = checkLoginCookie(currentUserId, users);
   if (templateVars.userId) {
     return res.redirect("/urls");
   }
@@ -49,18 +56,20 @@ app.get("/login", (req, res) => {
 
 // URL database page
 app.get("/urls", (req, res) => {
-  const templateVars = checkLoginCookie(req, users);
+  const currentUserId = req.session.user_id;
+  const templateVars = checkLoginCookie(currentUserId, users);
   // If user is not logged in send error.
   if (templateVars.userId === null) {
     return res.status(403).send("Please log in or register to see your URLs");
   }
-  templateVars.urls = urlsForUser(req, urlDatabase);
+  templateVars.urls = urlsForUser(currentUserId, urlDatabase);
   res.render("urls_index", templateVars);
 });
 
 // Create a new URL to be shortened
 app.get("/urls/new", (req, res) => {
-  const templateVars = checkLoginCookie(req, users);
+  const currentUserId = req.session.user_id;
+  const templateVars = checkLoginCookie(currentUserId, users);
   // If user is not logged in send error.
   if (!templateVars.userId) {
     return res.redirect("/login");
@@ -70,7 +79,8 @@ app.get("/urls/new", (req, res) => {
 
 // Create pages for the shortURLs in the database
 app.get("/urls/:shortURL", (req, res) => {
-  const templateVars = checkLoginCookie(req, users);
+  const currentUserId = req.session.user_id;
+  const templateVars = checkLoginCookie(currentUserId, users);
   // If user is not logged in, send error.
   if (templateVars.userId === null) {
     return res.status(403).send("Please log in or register to edit your URLs");
@@ -147,7 +157,7 @@ app.post("/login", (req, res) => {
 
   // Check if password is correct
   if (!bcrypt.compareSync(password, users[foundUserId].password)) {
-    return res.status(401).send("Incorrect password");
+    return res.status(403).send("Incorrect password");
   }
 
   req.session["user_id"] = foundUserId;
