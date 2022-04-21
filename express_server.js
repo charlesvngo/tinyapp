@@ -4,6 +4,7 @@ const bcrypt = require('bcryptjs');
 const bodyParser = require(`body-parser`);
 const cookieSession = require('cookie-session');
 const app = express();
+const { generateRandomString, checkLoginCookie, getUserByEmail, urlsForUser } = require('./helpers');
 const PORT = 8080;
 
 // Database of urls and shortened urls. Urls are registed to specific users.
@@ -11,51 +12,6 @@ const urlDatabase = {};
 
 // User database.
 const users = {};
-
-// Function to generate a random 6 alphanumeric string.
-const generateRandomString = () => {
-  let output = '';
-  let characterSet = 'abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789';
-  for (let i = 0; i < 6; i++) {
-    let randomizedChar = Math.floor(Math.random() * characterSet.length);
-    output += characterSet.charAt(randomizedChar);
-  }
-  return output;
-};
-
-// Function to check if a userId cookie is present. If not, will assign null to the variables.
-const checkLoginCookie = (req) => {
-  let output = {};
-  if (!req.session.user_id || !users[req.session.user_id]) {
-    output.userId = null;
-    output.userEmail = null;
-  } else {
-    output.userId = req.session.user_id;
-    output.userEmail = users[req.session.user_id].email;
-  }
-  return output;
-};
-
-const getUserByEmail = (email, database) => {
-  let user = null;
-  for (const users in database) {
-    if (database[users].email === email) {
-      user = users;
-    }
-  }
-  return user;
-};
-
-// Function that checks if the current user has any urls in the database.
-const urlsForUser = (req) => {
-  let output = {};
-  for (const shortUrl in urlDatabase) {
-    if (urlDatabase[shortUrl].userId === req.session.user_id) {
-      output[shortUrl] = urlDatabase[shortUrl].longURL;
-    }
-  }
-  return output;
-};
 
 // Setting EJS as the template engine.
 app.set("view engine", "ejs");
@@ -75,7 +31,7 @@ app.get("/", (req, res) => {
 
 // New user registration page. If user is already registered, will redirect to urls homepage.
 app.get("/register", (req, res) => {
-  const templateVars = checkLoginCookie(req);
+  const templateVars = checkLoginCookie(req, users);
   if (templateVars.userId) {
     return res.redirect("/urls");
   }
@@ -84,7 +40,7 @@ app.get("/register", (req, res) => {
 
 // Log in page. If user is already registered, will redirect to urls homepage.
 app.get("/login", (req, res) => {
-  const templateVars = checkLoginCookie(req);
+  const templateVars = checkLoginCookie(req, users);
   if (templateVars.userId) {
     return res.redirect("/urls");
   }
@@ -93,18 +49,18 @@ app.get("/login", (req, res) => {
 
 // URL database page
 app.get("/urls", (req, res) => {
-  const templateVars = checkLoginCookie(req);
+  const templateVars = checkLoginCookie(req, users);
   // If user is not logged in send error.
   if (templateVars.userId === null) {
     return res.status(403).send("Please log in or register to see your URLs");
   }
-  templateVars.urls = urlsForUser(req);
+  templateVars.urls = urlsForUser(req, urlDatabase);
   res.render("urls_index", templateVars);
 });
 
 // Create a new URL to be shortened
 app.get("/urls/new", (req, res) => {
-  const templateVars = checkLoginCookie(req);
+  const templateVars = checkLoginCookie(req, users);
   // If user is not logged in send error.
   if (!templateVars.userId) {
     return res.redirect("/login");
@@ -114,7 +70,7 @@ app.get("/urls/new", (req, res) => {
 
 // Create pages for the shortURLs in the database
 app.get("/urls/:shortURL", (req, res) => {
-  const templateVars = checkLoginCookie(req);
+  const templateVars = checkLoginCookie(req, users);
   // If user is not logged in, send error.
   if (templateVars.userId === null) {
     return res.status(403).send("Please log in or register to edit your URLs");
