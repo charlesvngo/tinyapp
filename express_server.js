@@ -18,7 +18,7 @@ app.set("view engine", "ejs");
 
 // Middleware to debug connections and parse the buffer when performing post requests.
 app.use(morgan("dev"));
-app.use(bodyParser.urlencoded({extended: true}));
+app.use(bodyParser.urlencoded({ extended: true }));
 app.use(cookieSession({
   name: 'session',
   keys: ['key1', 'key2']
@@ -60,7 +60,9 @@ app.get("/urls", (req, res) => {
   const templateVars = checkLoginCookie(currentUserId, users);
   // If user is not logged in send error.
   if (templateVars.id === null) {
-    return res.status(403).send("Please log in or register to see your URLs");
+    templateVars.statusCode = 401;
+    templateVars.errorMessage = "Please login or register to see your URLs.";
+    return res.status(401).render("errors", templateVars);
   }
   templateVars.urls = urlsForUser(currentUserId, urlDatabase);
   res.render("urls_index", templateVars);
@@ -83,12 +85,16 @@ app.get("/urls/:shortURL", (req, res) => {
   const templateVars = checkLoginCookie(currentUserId, users);
   // If user is not logged in, send error.
   if (templateVars.id === null) {
-    return res.status(403).send("Please log in or register to edit your URLs");
+    templateVars.statusCode = 401;
+    templateVars.errorMessage = "Please login to edit your URLs.";
+    return res.status(401).render("errors", templateVars);
   }
 
   // If user does not own the current shortURL, send error.
   if (templateVars.id !== urlDatabase[req.params.shortURL].userId) {
-    return res.status(403).send("Invalid URL to edit. To edit this URL, please log into the correct account");
+    templateVars.statusCode = 403;
+    templateVars.errorMessage = "Invalid URL to edit.";
+    return res.status(403).render("errors", templateVars);
   }
 
   templateVars.shortURL = req.params.shortURL;
@@ -98,6 +104,13 @@ app.get("/urls/:shortURL", (req, res) => {
 
 // Short URL redirect link
 app.get("/u/:shortURL", (req, res) => {
+  if (!urlDatabase[req.params.shortURL]) {
+    const currentUserId = req.session.user_id;
+    const templateVars = checkLoginCookie(currentUserId, users);
+    templateVars.statusCode = 400;
+    templateVars.errorMessage = "ShortURL does not exist";
+    return res.status(400).render("errors", templateVars);
+  }
   const longURL = urlDatabase[req.params.shortURL].longURL;
   res.redirect(longURL);
 });
@@ -109,14 +122,19 @@ app.get("/urls.json", (req, res) => {
 
 // Adding new short URLs to the database.
 app.post("/urls", (req, res) => {
-  // Check if logged in. If not, send 401.
+  // Check if logged in. If not, send 403.
   if (!req.session.user_id) {
-    return res.status(401).send("Please log in to create a short URL");
+    const currentUserId = req.session.user_id;
+    const templateVars = checkLoginCookie(currentUserId, users);
+    templateVars.statusCode = 403;
+    templateVars.errorMessage = "Please log in to create a short URL";
+    return res.status(403).render("errors", templateVars);
   }
   const newShortUrl = generateRandomString();
-  urlDatabase[newShortUrl] = {};
-  urlDatabase[newShortUrl].longURL = req.body.longURL;
-  urlDatabase[newShortUrl].userId = req.session.user_id;
+  urlDatabase[newShortUrl] = {
+    longURL: req.body.longURL,
+    userId: req.session.user_id
+  };
   res.redirect(`/urls/${newShortUrl}`);
 });
 
@@ -129,7 +147,11 @@ app.post("/urls/:shortURL", (req, res) => {
 // Removing short URLs from the database
 app.post("/urls/:shortURL/delete", (req, res) => {
   if (req.session.user_id !== urlDatabase[req.params.shortURL].userId) {
-    return res.status(403).send("Invalid URL to delete. To delete this URL, please log into the correct account");
+    const currentUserId = req.session.user_id;
+    const templateVars = checkLoginCookie(currentUserId, users);
+    templateVars.statusCode = 403;
+    templateVars.errorMessage = "Invalid URL to delete. To delete this URL, please log into the correct account";
+    return res.status(403).render("errors", templateVars);
   }
   delete urlDatabase[req.params.shortURL];
   res.redirect("/urls");
@@ -143,20 +165,32 @@ app.post("/login", (req, res) => {
 
   // Check if email and password are truthy
   if (!email || !password) {
-    return res.status(400).send("Invalid email or password.");
+    const currentUserId = req.session.user_id;
+    const templateVars = checkLoginCookie(currentUserId, users);
+    templateVars.statusCode = 401;
+    templateVars.errorMessage = "Invalid email or password";
+    return res.status(401).render("errors", templateVars);
   }
-  
+
   // Check if email is in current database
   foundUserId = getUserByEmail(email, users);
-  
+
   // If email is not in system
   if (!foundUserId) {
-    return res.status(403).send("No user found");
+    const currentUserId = req.session.user_id;
+    const templateVars = checkLoginCookie(currentUserId, users);
+    templateVars.statusCode = 403;
+    templateVars.errorMessage = "No user found";
+    return res.status(403).render("errors", templateVars);
   }
 
   // Check if password is correct
   if (!bcrypt.compareSync(password, users[foundUserId].password)) {
-    return res.status(403).send("Incorrect password");
+    const currentUserId = req.session.user_id;
+    const templateVars = checkLoginCookie(currentUserId, users);
+    templateVars.statusCode = 403;
+    templateVars.errorMessage = "Incorrect Password";
+    return res.status(403).render("errors", templateVars);
   }
 
   req.session["user_id"] = foundUserId;
@@ -172,13 +206,19 @@ app.post("/register", (req, res) => {
 
   // Check for valid email and passwords
   if (email === '' || password === '') {
-    res.status(400);
-    res.send("Invalid email or password.");
-    return;
+    const currentUserId = req.session.user_id;
+    const templateVars = checkLoginCookie(currentUserId, users);
+    templateVars.statusCode = 403;
+    templateVars.errorMessage = "Invalid email or password";
+    return res.status(403).render("errors", templateVars);
   }
   // Check for duplicate emails.
   if (getUserByEmail(email, users)) {
-    return res.status(403).send("Duplicate email found");
+    const currentUserId = req.session.user_id;
+    const templateVars = checkLoginCookie(currentUserId, users);
+    templateVars.statusCode = 403;
+    templateVars.errorMessage = "Account with email already exists";
+    return res.status(403).render("errors", templateVars);
   }
 
   const userId = generateRandomString();
@@ -193,9 +233,7 @@ app.post("/register", (req, res) => {
 
 // Log out requests
 app.post("/logout", (req, res) => {
-  res.clearCookie("session");
-  res.clearCookie("session.sig");
-  res.redirect("/login");
+  res.clearCookie("session").clearCookie("session.sig").redirect("/login");
 });
 
 // Server initialization
