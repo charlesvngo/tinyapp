@@ -1,8 +1,8 @@
 const express = require("express");
 const morgan = require('morgan');
 const bcrypt = require('bcryptjs');
-const bodyParser = require("body-parser");
-const cookieParser = require("cookie-parser");
+const bodyParser = require(`body-parser`);
+const cookieSession = require('cookie-session');
 const app = express();
 const PORT = 8080;
 
@@ -26,12 +26,12 @@ const generateRandomString = () => {
 // Function to check if a userId cookie is present. If not, will assign null to the variables.
 const checkLoginCookie = (req) => {
   let output = {};
-  if (!req.cookies.user_id) {
+  if (!req.session.user_id) {
     output.userId = null;
     output.userEmail = null;
   } else {
-    output.userId = req.cookies.user_id;
-    output.userEmail = users[req.cookies.user_id].email;
+    output.userId = req.session.user_id;
+    output.userEmail = users[output.userId].email;
   }
   return output;
 };
@@ -40,7 +40,7 @@ const checkLoginCookie = (req) => {
 const urlsForUser = (req) => {
   let output = {};
   for (const shortUrl in urlDatabase) {
-    if (urlDatabase[shortUrl].userId === req.cookies.user_id) {
+    if (urlDatabase[shortUrl].userId === req.session.user_id) {
       output[shortUrl] = urlDatabase[shortUrl].longURL;
     }
   }
@@ -53,11 +53,13 @@ app.set("view engine", "ejs");
 // Middleware to debug connections and parse the buffer when performing post requests.
 app.use(morgan("dev"));
 app.use(bodyParser.urlencoded({extended: true}));
-app.use(cookieParser());
+app.use(cookieSession({
+  name: 'session',
+  keys: ['key1', 'key2']
+}));
 
 // Home page
 app.get("/", (req, res) => {
-  res.cookie("user_id", users['Bsdfa3'].id);
   res.send("Hello! Logging into test user.");
 });
 
@@ -132,19 +134,19 @@ app.get("/urls.json", (req, res) => {
 // Adding new short URLs to the database.
 app.post("/urls", (req, res) => {
   // Check if logged in. If not, send 401.
-  if (!req.cookies.user_id) {
+  if (!req.session.user_id) {
     return res.status(401).send("Please log in to create a short URL");
   }
   const newShortUrl = generateRandomString();
   urlDatabase[newShortUrl] = {};
   urlDatabase[newShortUrl].longURL = req.body.longURL;
-  urlDatabase[newShortUrl].userId = req.cookies.user_id;
+  urlDatabase[newShortUrl].userId = req.session.user_id;
   res.redirect(`/urls/${newShortUrl}`);
 });
 
 // Removing short URLs from the database
 app.post("/urls/:shortURL/delete", (req, res) => {
-  if (req.cookies.user_id !== urlDatabase[req.params.shortURL].userId) {
+  if (req.session.user_id !== urlDatabase[req.params.shortURL].userId) {
     return res.status(403).send("Invalid URL to delete. To delete this URL, please log into the correct account");
   }
 
@@ -186,7 +188,7 @@ app.post("/login", (req, res) => {
     return res.status(401).send("Incorrect password");
   }
 
-  res.cookie("user_id", foundUserId);
+  req.session["user_id"] = foundUserId;
   res.redirect("/urls");
 
 });
@@ -218,13 +220,14 @@ app.post("/register", (req, res) => {
     email: email,
     password: hashedPassword
   };
-  res.cookie("user_id", userId);
+  req.session["user_id"] = userId;
   res.redirect("/urls");
 });
 
 // Log out requests
 app.post("/logout", (req, res) => {
-  res.clearCookie("user_id");
+  res.clearCookie("session");
+  res.clearCookie("session.sig");
   res.redirect("/login");
 });
 
