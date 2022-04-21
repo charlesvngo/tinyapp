@@ -70,7 +70,7 @@ app.get("/urls", (req, res) => {
 app.get("/urls/new", (req, res) => {
   const currentUserId = req.session.user_id;
   const templateVars = checkLoginCookie(currentUserId, users);
-  // If user is not logged in send error.
+  // If user is not logged in, redirect to login page.
   if (!templateVars.id) {
     return res.redirect("/login");
   }
@@ -120,19 +120,18 @@ app.post("/urls", (req, res) => {
   res.redirect(`/urls/${newShortUrl}`);
 });
 
+// Modifying short URLs
+app.post("/urls/:shortURL", (req, res) => {
+  urlDatabase[req.params.shortURL].longURL = req.body.longURL;
+  res.redirect("/urls");
+});
+
 // Removing short URLs from the database
 app.post("/urls/:shortURL/delete", (req, res) => {
   if (req.session.user_id !== urlDatabase[req.params.shortURL].userId) {
     return res.status(403).send("Invalid URL to delete. To delete this URL, please log into the correct account");
   }
-
   delete urlDatabase[req.params.shortURL];
-  res.redirect("/urls");
-});
-
-// Modifying short URLs
-app.post("/urls/:shortURL/edit", (req, res) => {
-  urlDatabase[req.params.shortURL].longURL = req.body.longURL;
   res.redirect("/urls");
 });
 
