@@ -9,19 +9,19 @@
         <a class="nav-item nav-link" href="/urls">My URLs</a>
         <a class="nav-item nav-link" href="/urls/new">Create New URL</a>
       </div>
+      <% if (userEmail !== null) { %>
+        <div class="d-flex ml-auto nav-item mt-2 mt-md-0">
+          <p class = "form-inline mt-2 mt-md-0" style="margin-bottom: 0px;padding-right: 5px;""> Logged in as: <%= userEmail %></p>
+          <form class="form-inline mt-2 mt-md-0" action="/logout" method="POST">
+            <button class="btn btn-outline-dark my-2 my-sm-0" type="submit">Logout</button>
+          </form>
+        </div>
+      <% } else { %>
+        <div class="d-flex ml-auto navbar-nav" id="navbarNavAltMarkup">
+          <a class="nav-item nav-link" href="/login">Login</a>
+          <a class="nav-item nav-link" href="/register">Register</a>
+        </div>
+      <% } %> 
     </div>
-    <% if (userEmail !== null) { %>
-      <div class="d-flex nav-item mt-2 mt-md-0">
-        <p class = "form-inline mt-2 mt-md-0" style="margin-bottom: 0px;padding-right: 5px;""> Logged in as: <%= userEmail %></p>
-        <form class="form-inline mt-2 mt-md-0" action="/logout" method="POST">
-          <button class="btn btn-outline-dark my-2 my-sm-0" type="submit">Logout</button>
-        </form>
-      </div>
-    <% } else { %>
-      <div class="d-flex navbar-nav" id="navbarNavAltMarkup">
-        <a class="nav-item nav-link" href="/login">Login</a>
-        <a class="nav-item nav-link" href="/register">Register</a>
-      </div>
-    <% } %> 
   </nav>
 </header>

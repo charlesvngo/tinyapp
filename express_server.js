@@ -56,7 +56,7 @@ app.get("/urls", (req, res) => {
   let templateVars = validateLoginCookie(req.session.user_id, users);
   // If user is not logged in send error.
   if (templateVars.id === null) {
-    templateVars = generateErrorPage(req.session.user_id, users, 401, "Please login or register to see your URLs.");
+    templateVars = generateErrorPage(req.session.user_id, users, 401, "Please login to see your URLs.");
     return res.status(401).render("errors", templateVars);
   }
   templateVars.urls = urlsForUser(req.session.user_id, urlDatabase);
