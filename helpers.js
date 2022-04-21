@@ -9,7 +9,7 @@ const generateRandomString = () => {
   return output;
 };
 
-// Function to check if a userId cookie is present. If not, will assign null to the variables.
+// Function will check the current login cookie. If not present or invalid credentials, will set to null
 const checkLoginCookie = (id, users) => {
   let output = {};
   // If no login is present or login is invalid
