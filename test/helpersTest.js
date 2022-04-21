@@ -1,6 +1,6 @@
 const { assert } = require('chai');
 
-const { getUserByEmail, generateRandomString, checkLoginCookie, urlsForUser } = require('../helpers.js');
+const { getUserByEmail, generateRandomString, validateLoginCookie, urlsForUser } = require('../helpers.js');
 
 const testUsers = {
   "userRandomID": {
@@ -65,21 +65,21 @@ describe('generateRandomString', function() {
   
 });
 
-describe('checkLoginCookie', function() {
+describe('validateLoginCookie', function() {
   it('Should return an object with the correct user id and email if found', function() {
-    const output = checkLoginCookie("userRandomID", testUsers);
+    const output = validateLoginCookie("userRandomID", testUsers);
     const expectedOutput = { id: "userRandomID", userEmail: "user@example.com" };
     assert.deepStrictEqual(output, expectedOutput);
   });
   
   it('Should return an object with a null user & email if not found.', function() {
-    const output = checkLoginCookie("user3RandomID", testUsers);
+    const output = validateLoginCookie("user3RandomID", testUsers);
     const expectedOutput = { id: null, userEmail: null };
     assert.deepStrictEqual(output, expectedOutput);
   });
   
   it('Should return an object with a null user & email if no arguments were passed.', function() {
-    const output = checkLoginCookie();
+    const output = validateLoginCookie();
     const expectedOutput = { id: null, userEmail: null };
     assert.deepStrictEqual(output, expectedOutput);
   });
@@ -108,13 +108,5 @@ describe('urlsForUser', function() {
     const expectedOutput = {};
     assert.deepStrictEqual(output, expectedOutput);
   });
-
-
-  
-  // it('Should return an object with a null user & email if no arguments were passed.', function() {
-  //   const output = checkLoginCookie();
-  //   const expectedOutput = { id: null, userEmail: null };
-  //   assert.deepStrictEqual(output, expectedOutput);
-  // });
   
 });

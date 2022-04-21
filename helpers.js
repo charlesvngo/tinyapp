@@ -10,7 +10,7 @@ const generateRandomString = () => {
 };
 
 // Function will check the current login cookie. If not present or invalid credentials, will set to null
-const checkLoginCookie = (id, users) => {
+const validateLoginCookie = (id, users) => {
   let output = {};
   // If no login is present or login is invalid
   if (!id || !users[id]) {
@@ -45,4 +45,4 @@ const urlsForUser = (id, urlDatabase) => {
   return output;
 };
 
-module.exports = { generateRandomString, checkLoginCookie, getUserByEmail, urlsForUser };
+module.exports = { generateRandomString, validateLoginCookie, getUserByEmail, urlsForUser };
