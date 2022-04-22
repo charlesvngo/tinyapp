@@ -47,9 +47,13 @@
               </td>
             </tr>
             <% } %>
+            
         </tbody>
       </table>
       <div>
+        <% if (userEmail === null) { %>
+          <h5>Log in or Register to create and view short URLs</h5>
+        <% } %>
         <h5><a href="/urls/new">Create a New Short Link</a></h5>
       </div>
     </main>

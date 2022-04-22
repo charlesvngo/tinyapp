@@ -26,7 +26,7 @@ app.use(cookieSession({
 
 // Home page. If logged in, redirect to urls index, if not then login page.
 app.get("/", (req, res) => {
-  const templateVars = validateLoginCookie(req.session.user_id, users);
+  const templateVars = validateLoginCookie(req.session.userId, users);
   if (templateVars.id) {
     return res.redirect("/urls");
   }
@@ -35,7 +35,7 @@ app.get("/", (req, res) => {
 
 // New user registration page. If user is already registered, will redirect to urls homepage.
 app.get("/register", (req, res) => {
-  const templateVars = validateLoginCookie(req.session.user_id, users);
+  const templateVars = validateLoginCookie(req.session.userId, users);
   if (templateVars.id) {
     return res.redirect("/urls");
   }
@@ -44,7 +44,7 @@ app.get("/register", (req, res) => {
 
 // Log in page. If user is already registered, will redirect to urls homepage.
 app.get("/login", (req, res) => {
-  const templateVars = validateLoginCookie(req.session.user_id, users);
+  const templateVars = validateLoginCookie(req.session.userId, users);
   if (templateVars.id) {
     return res.redirect("/urls");
   }
@@ -53,19 +53,14 @@ app.get("/login", (req, res) => {
 
 // URL database page
 app.get("/urls", (req, res) => {
-  let templateVars = validateLoginCookie(req.session.user_id, users);
-  // If user is not logged in send error.
-  if (templateVars.id === null) {
-    templateVars = generateErrorPage(req.session.user_id, users, 401, "Please login to see your URLs.");
-    return res.status(401).render("errors", templateVars);
-  }
-  templateVars.urls = urlsForUser(req.session.user_id, urlDatabase);
+  let templateVars = validateLoginCookie(req.session.userId, users);
+  templateVars.urls = urlsForUser(req.session.userId, urlDatabase);
   res.render("urls_index", templateVars);
 });
 
 // Create a new URL to be shortened
 app.get("/urls/new", (req, res) => {
-  const templateVars = validateLoginCookie(req.session.user_id, users);
+  const templateVars = validateLoginCookie(req.session.userId, users);
   // If user is not logged in, redirect to login page.
   if (!templateVars.id) {
     return res.redirect("/login");
@@ -75,18 +70,18 @@ app.get("/urls/new", (req, res) => {
 
 // Create pages for the shortURLs in the database
 app.get("/urls/:shortURL", (req, res) => {
-  let templateVars = validateLoginCookie(req.session.user_id, users);
+  let templateVars = validateLoginCookie(req.session.userId, users);
   if (templateVars.id === null) {
-    templateVars = generateErrorPage(req.session.user_id, users, 401, "Please login to edit your URLs.");
+    templateVars = generateErrorPage(req.session.userId, users, 401, "Please login to edit your URLs.");
     return res.status(401).render("errors", templateVars);
   }
   if (!urlDatabase[req.params.shortURL]) {
-    templateVars = generateErrorPage(req.session.user_id, users, 404, "URL does not exist.");
+    templateVars = generateErrorPage(req.session.userId, users, 404, "URL does not exist.");
     return res.status(404).render("errors", templateVars);
   }
   // If user does not own the current shortURL, send error.
   if (templateVars.id !== urlDatabase[req.params.shortURL].userId) {
-    templateVars = generateErrorPage(req.session.user_id, users, 403, "Invalid URL to edit.");
+    templateVars = generateErrorPage(req.session.userId, users, 403, "Invalid URL to edit.");
     return res.status(403).render("errors", templateVars);
   }
   templateVars.shortURL = req.params.shortURL;
@@ -97,7 +92,7 @@ app.get("/urls/:shortURL", (req, res) => {
 // Short URL redirect link
 app.get("/u/:shortURL", (req, res) => {
   if (!urlDatabase[req.params.shortURL]) {
-    const templateVars = generateErrorPage(req.session.user_id, users, 404, "ShortURL does not exist");
+    const templateVars = generateErrorPage(req.session.userId, users, 404, "ShortURL does not exist");
     return res.status(400).render("errors", templateVars);
   }
   const longURL = urlDatabase[req.params.shortURL].longURL;
@@ -107,14 +102,14 @@ app.get("/u/:shortURL", (req, res) => {
 // Adding new short URLs to the database.
 app.post("/urls", (req, res) => {
   // Check if logged in. If not, send 403.
-  if (!req.session.user_id) {
-    const templateVars = generateErrorPage(req.session.user_id, users, 403, "Please log in to create a short URL");
+  if (!req.session.userId) {
+    const templateVars = generateErrorPage(req.session.userId, users, 403, "Please log in to create a short URL");
     return res.status(403).render("errors", templateVars);
   }
   const newShortUrl = generateRandomString();
   urlDatabase[newShortUrl] = {
     longURL: req.body.longURL,
-    userId: req.session.user_id
+    userId: req.session.userId
   };
   res.redirect(`/urls/${newShortUrl}`);
 });
@@ -122,8 +117,8 @@ app.post("/urls", (req, res) => {
 // Modifying short URLs
 app.post("/urls/:shortURL", (req, res) => {
   // If user is not logged in send error.
-  if (req.session.user_id !== urlDatabase[req.params.shortURL].userId) {
-    const templateVars = generateErrorPage(req.session.user_id, users, 403, "Invalid URL to edit.");
+  if (req.session.userId !== urlDatabase[req.params.shortURL].userId) {
+    const templateVars = generateErrorPage(req.session.userId, users, 403, "Invalid URL to edit.");
     return res.status(403).render("errors", templateVars);
   }
   urlDatabase[req.params.shortURL].longURL = req.body.longURL;
@@ -132,8 +127,8 @@ app.post("/urls/:shortURL", (req, res) => {
 
 // Removing short URLs from the database
 app.post("/urls/:shortURL/delete", (req, res) => {
-  if (req.session.user_id !== urlDatabase[req.params.shortURL].userId) {
-    const templateVars = generateErrorPage(req.session.user_id, users, 403, "Invalid URL to delete.");
+  if (req.session.userId !== urlDatabase[req.params.shortURL].userId) {
+    const templateVars = generateErrorPage(req.session.userId, users, 403, "Invalid URL to delete.");
     return res.status(403).render("errors", templateVars);
   }
   delete urlDatabase[req.params.shortURL];
@@ -147,24 +142,23 @@ app.post("/login", (req, res) => {
   let foundUserId = null;
   // Check if email and password are truthy
   if (!email || !password) {
-    const templateVars = generateErrorPage(req.session.user_id, users, 401, "Invalid email or password");
+    const templateVars = generateErrorPage(req.session.userId, users, 401, "Invalid email or password");
     return res.status(401).render("errors", templateVars);
   }
   // Check if email is in current database
   foundUserId = getUserByEmail(email, users);
   // If email is not in system
   if (!foundUserId) {
-    const templateVars = generateErrorPage(req.session.user_id, users, 403, "No user found");
+    const templateVars = generateErrorPage(req.session.userId, users, 403, "No user found");
     return res.status(403).render("errors", templateVars);
   }
   // Check if password is correct
   if (!bcrypt.compareSync(password, users[foundUserId].password)) {
-    const templateVars = generateErrorPage(req.session.user_id, users, 403, "Incorrect Password");
+    const templateVars = generateErrorPage(req.session.userId, users, 403, "Incorrect Password");
     return res.status(403).render("errors", templateVars);
   }
-  req.session["user_id"] = foundUserId;
+  req.session["userId"] = foundUserId;
   res.redirect("/urls");
-
 });
 
 // Register for an account
@@ -174,12 +168,12 @@ app.post("/register", (req, res) => {
   const hashedPassword = bcrypt.hashSync(password, 10);
   // Check for valid email and passwords
   if (email === '' || password === '') {
-    const templateVars = generateErrorPage(req.session.user_id, users, 403, "Invalid email or password");
+    const templateVars = generateErrorPage(req.session.userId, users, 403, "Invalid email or password");
     return res.status(403).render("errors", templateVars);
   }
   // Check for duplicate emails.
   if (getUserByEmail(email, users)) {
-    const templateVars = generateErrorPage(req.session.user_id, users, 403, "Account with email already exists");
+    const templateVars = generateErrorPage(req.session.userId, users, 403, "Account with email already exists");
     return res.status(403).render("errors", templateVars);
   }
   const userId = generateRandomString();
@@ -188,13 +182,14 @@ app.post("/register", (req, res) => {
     email: email,
     password: hashedPassword
   };
-  req.session["user_id"] = userId;
+  req.session.userId = userId;
   res.redirect("/urls");
 });
 
 // Log out requests
 app.post("/logout", (req, res) => {
-  res.clearCookie("session").clearCookie("session.sig").redirect("/login");
+  req.session.userId = null;
+  res.redirect("/login");
 });
 
 // Server initialization
